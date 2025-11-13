@@ -1,0 +1,13 @@
+Hello {{ full_name }},
+
+Your RCMS account is ready!
+
+Email: {{ email }}
+Temporary Password: {{ temp_password }}
+
+Login here: https://yourschool.cm/login
+
+Please change your password after logging in.
+
+---
+RCMS – {{ school_name }}

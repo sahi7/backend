@@ -1,0 +1,9 @@
+Django==5.2.8
+adrf==0.1.11
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+psycopg[binary]==3.2.12
+openpyxl==3.1.5
+pandas==2.3.3
+python-decouple==3.8
+uvicorn[standard]==0.38.0

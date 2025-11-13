@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Welcome to RCMS</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #1a56db; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+    .btn {
+      display: inline-block;
+      background: #1a56db;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+    .footer { margin-top: 40px; font-size: 12px; color: #666; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>RCMS</h1>
+    </div>
+    <div class="content">
+      <h2>Hello {{ full_name }},</h2>
+      <p>Your account has been created successfully.</p>
+
+      <p><strong>Email:</strong> {{ email }}</p>
+      <p><strong>Temporary Password:</strong> <code style="background:#e5e7eb;padding:2px 6px;border-radius:4px;">{{ temp_password }}</code></p>
+
+      <p>Please log in and change your password immediately.</p>
+
+      <a href="https://yourschool.cm/login" class="btn">Login Now</a>
+
+      <p>If you didn’t request this, contact your principal.</p>
+    </div>
+    <div class="footer">
+      &copy; {{ year }} RCMS – {{ school_name }}
+    </div>
+  </div>
+</body>
+</html>
