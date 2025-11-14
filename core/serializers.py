@@ -57,7 +57,7 @@ class AcademicYearSerializer(serializers.ModelSerializer):
             await AcademicYear.objects.filter(is_current=True).aupdate(is_current=False)
         return await super().acreate(validated_data)
 
-
+from asgiref.sync import sync_to_async
 class TermSerializer(serializers.ModelSerializer):
     academic_year_name = serializers.CharField(source='academic_year.name', read_only=True)
 
@@ -70,8 +70,11 @@ class TermSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         # 1. Date range
-        if data['start_date'] >= data['end_date']:
-            raise ValidationError("start_date must be before end_date")
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        if start_date and end_date:
+            if start_date >= end_date:
+                raise ValidationError("start_date must be before end_date")
 
         # 2. Term number uniqueness per year (no DB check)
         # → Defer to view

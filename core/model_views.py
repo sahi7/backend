@@ -65,16 +65,6 @@ class TermViewSet(ModelViewSet):
         await sync_to_async(serializer.save)()
         return Response(serializer.data, status=201)
 
-    # --- ASYNC UPDATE ---
-    async def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = await self.aget_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        await sync_to_async(serializer.is_valid)(raise_exception=True)
-        await self._validate_unique_term(serializer.validated_data, instance=instance)
-        await sync_to_async(serializer.save)()
-        return Response(serializer.data)
-
     # --- Shared validation ---
     async def _validate_unique_term(self, data, instance=None):
         year = data['academic_year']
