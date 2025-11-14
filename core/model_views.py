@@ -90,7 +90,7 @@ class TermViewSet(ModelViewSet):
             raise ValidationError(f"Term {number} already exists in {year}")
 
     # --- SET CURRENT TERM ---
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='set-current')
     async def set_current(self, request):
         """
         POST /api/terms/set-current/
@@ -101,7 +101,7 @@ class TermViewSet(ModelViewSet):
             return Response({"error": "id required"}, status=400)
 
         try:
-            term = await Term.objects.aget(id=term_id)
+            term = await Term.objects.select_related('academic_year').aget(id=term_id)
         except Term.DoesNotExist:
             return Response({"error": "Term not found"}, status=404)
 

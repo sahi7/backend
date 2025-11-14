@@ -64,7 +64,7 @@ class TermSerializer(serializers.ModelSerializer):
     class Meta:
         model = Term
         fields = [
-            'id', 'academic_year', 'academic_year_name',
+            'id', 'academic_year', 'academic_year_name', 'is_current',
             'term_number', 'name', 'start_date', 'end_date'
         ]
 
