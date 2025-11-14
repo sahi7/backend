@@ -1,0 +1,2 @@
+---
+RCMS – © {{ year }} {{ school_name }} | yourschool.cm

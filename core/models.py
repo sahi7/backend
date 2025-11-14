@@ -56,7 +56,7 @@ class Term(models.Model):
         unique_together = ('academic_year', 'term_number')
 
     def __str__(self):
-        return f"{self.academic_year} - {self.name}"
+        return f" {self.name} - {self.academic_year}"
 
 class ClassRoom(models.Model):
     name = models.CharField(max_length=20)  # e.g., "Form 1", "Form 2"

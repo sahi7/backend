@@ -76,7 +76,6 @@ TEMPLATES = [
         },
     },
 ]
-print("temp dir: ", TEMPLATES_DIR)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -92,6 +91,8 @@ REST_FRAMEWORK = {
 WSGI_APPLICATION = 'rcms.wsgi.application'
 
 ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1']
+
+PWD_RESET_URL = 'https://gt-ekondo.cm/reset-password/'
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",

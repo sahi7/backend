@@ -44,7 +44,7 @@ async def send_templated_email(
     from_email = from_email or settings.DEFAULT_FROM_EMAIL
     to = to or [context.get('email')]
 
-    print(f"Sending email FROM: {from_email} \n CONTEXT: {context}")
+    print(f"Sending email FROM: {from_email} \nCONTEXT: {context}")
 
     # Build email
     email = EmailMultiAlternatives(

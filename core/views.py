@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from asgiref.sync import sync_to_async
 
-from.permissions import IsPrincipal
+from.permissions import *
 from .models import Department
 from .custom_views import send_welcome_email
 from .models import Mark, Student, Subject, SubjectAssignment, Term
@@ -22,6 +22,21 @@ logger = logging.getLogger('web')
 User = get_user_model()
 
 class RegisterUserView(APIView):
+    """
+    Create teacher/student/parent (Principal only).
+
+    **Request**
+    ```json
+    POST /api/users/register/
+    {
+      "role": "teacher",
+      "email": "new@school.cm",
+      "first_name": "Jane",
+      "last_name": "Smith",
+      "department_id": "uuid-dept-1",
+      "subject_ids": ["uuid-subj-1", "uuid-subj-2"]
+    }
+    """
     permission_classes = [IsPrincipal]
 
     async def post(self, request):
@@ -70,7 +85,7 @@ class RegisterUserView(APIView):
             subjects = await Subject.objects.filter(id__in=subject_ids).ain_bulk()
             await user.taught_subjects.aadd(*subjects.values())
 
-        # await user.asave() 
+        await user.asave() 
 
         # Send email (async offload)
         asyncio.create_task(send_welcome_email(user, temp_password))
@@ -107,6 +122,27 @@ def _commit_marks_sync(
                     ['score', 'total_mark', 'comment', 'entered_by', 'modified_by', 'modified_at'],
                 )
 
+class UserMeView(APIView):
+    """
+    Return authenticated user profile.
+
+    **Request**
+    ```http
+    GET /api/auth/me/
+    Authorization: Bearer <access_token>
+    """
+    permission_classes = []
+
+    async def get(self, request):
+        user = request.user
+        return Response({
+            "id": str(user.id),
+            "email": user.email,
+            "full_name": user.get_full_name(),
+            "role": user.role,
+            "department": user.department.name if user.department else None,
+        })
+    
 class ExcelMarkImportView(APIView):
     """
     POST: Upload Excel/CSV with marks
@@ -324,30 +360,30 @@ class ExcelMarkImportView(APIView):
         
 class TeacherScopeView(APIView):
     """
-    GET /api/marks/teacher-scope/<teacher_id>/
+    GET /api/teacher-scope/<teacher_id>/
     Returns full hierarchical scope of a teacher.
     Only accessible by principal or the teacher themselves.
     """
-    permission_classes = []  # Add IsAuthenticated + custom later
+    permission_classes = [CanViewTeacherScope, ]  # Add later: IsAuthenticated + custom
 
     async def get(self, request, teacher_id: str):
         # 1. Fetch teacher
         try:
             teacher = await User.objects.aget(id=teacher_id, role='teacher')
-        except User.DoesNotExist:
+        except (ValueError, User.DoesNotExist):
             return Response(
-                {"error": "Teacher not found or not a teacher"},
+                {"error": "Teacher not found or invalid ID"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # 2. Optional: restrict access
-        if request.user != teacher and request.user.role != 'principal':
+        # 2. Authorization
+        if request.user.id != teacher.id and request.user.role != 'principal':
             return Response(
                 {"error": "Unauthorized"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # 3. Fetch assignments with all relations (async-safe prefetch)
+        # 3. Fetch assignments with prefetch (async-safe)
         assignments = await asyncio.to_thread(
             lambda: list(
                 SubjectAssignment.objects.filter(teacher=teacher)
@@ -358,12 +394,12 @@ class TeacherScopeView(APIView):
                     'department'
                 )
                 .prefetch_related(
-                    'department__class_room'
+                    'department__class_rooms'  # M2M → now works
                 )
                 .order_by(
                     'term__academic_year__start_date',
                     'term__term_number',
-                    'department__class_room__name',
+                    'department__class_rooms__name',
                     'department__name',
                     'subject__code'
                 )
@@ -386,9 +422,8 @@ class TeacherScopeView(APIView):
                 }
             })
 
-        # 4. Build nested structure
+        # 4. Build nested scope: Year → Term → Class → Dept → [Subjects]
         scope = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
-
         seen_classes = set()
         seen_depts = set()
         seen_subjects = set()
@@ -397,10 +432,11 @@ class TeacherScopeView(APIView):
             year = assignment.term.academic_year.name
             term = assignment.term.name
             subject = assignment.subject
+            dept = assignment.department
 
-            # Get all class names (M2M)
-            class_names = [cr.name for cr in assignment.department.class_room.all()]
-            dept_name = assignment.department.name
+            # Get all class names from M2M
+            class_names = [cr.name for cr in dept.class_rooms.all()]
+            dept_name = dept.name
 
             for class_name in class_names:
                 scope[year][term][class_name][dept_name].append({
@@ -408,14 +444,14 @@ class TeacherScopeView(APIView):
                     "subject_code": subject.code,
                     "subject_name": subject.name,
                     "coefficient": float(subject.coefficient),
-                    "max_score": float(subject.max_score)
+                    "max_score": float(subject.max_score),
                 })
 
                 seen_classes.add(class_name)
                 seen_depts.add(dept_name)
                 seen_subjects.add(subject.code)
 
-        # Convert defaultdict → dict
+        # Convert to plain dict
         scope_dict = {
             year: {
                 term: {
@@ -430,7 +466,7 @@ class TeacherScopeView(APIView):
             for year, term_dict in scope.items()
         }
 
-        # 5. Build response
+        # 5. Response
         return Response({
             "teacher": {
                 "id": str(teacher.id),
